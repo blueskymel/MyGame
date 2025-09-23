@@ -69,7 +69,7 @@ public class DonkeyKong : MonoBehaviour
     void Update()
     {
         UpdateAnimation();
-        UpdateBarrelThrowing();
+        // Barrel throwing is now handled by BarrelThrowingRoutine() coroutine
     }
     
     void CreateDonkeyKongSprites()
@@ -325,6 +325,22 @@ public class DonkeyKong : MonoBehaviour
         if (GameManager.Instance != null)
         {
             GameManager.Instance.BarrelSpawned();
+        }
+    }
+    
+    IEnumerator BarrelThrowingRoutine()
+    {
+        while (true)
+        {
+            // Wait for the throw interval with some variation
+            float waitTime = throwInterval + Random.Range(-throwIntervalVariation, throwIntervalVariation);
+            yield return new WaitForSeconds(waitTime);
+            
+            // Only throw if not currently throwing and game is active
+            if (!isThrowingBarrel && GameManager.Instance != null && GameManager.Instance.IsGameActive())
+            {
+                yield return StartCoroutine(ThrowBarrelAnimation());
+            }
         }
     }
     

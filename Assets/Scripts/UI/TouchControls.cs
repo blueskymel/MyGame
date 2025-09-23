@@ -1,263 +1,200 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 public class TouchControls : MonoBehaviour
 {
-    [Header("UI References")]
-    public Button leftButton;
-    public Button rightButton;
-    public Button jumpButton;
-    public Button upButton;
-    public Button downButton;
-    
-    [Header("Touch Settings")]
+    [Header("Touch Input Settings")]
+    public bool enableTouchControls = true;
     public float touchSensitivity = 1f;
-    public bool useVirtualButtons = true;
-    public bool useTouchGestures = true;
+    
+    [Header("Button Positions")]
+    public Rect leftButtonRect = new Rect(50, 50, 100, 100);
+    public Rect rightButtonRect = new Rect(200, 50, 100, 100);
+    public Rect jumpButtonRect = new Rect(Screen.width - 150, 50, 100, 100);
+    public Rect upButtonRect = new Rect(125, 200, 100, 100);
+    public Rect downButtonRect = new Rect(125, 50, 100, 100);
     
     // Input states
-    private Vector2 movementInput;
-    private bool jumpPressed;
-    private bool jumpInput;
-    
-    // Touch gesture areas
-    private Rect leftTouchArea;
-    private Rect rightTouchArea;
-    private Rect jumpTouchArea;
+    private bool leftPressed = false;
+    private bool rightPressed = false;
+    private bool jumpPressed = false;
+    private bool upPressed = false;
+    private bool downPressed = false;
     
     void Start()
     {
-        SetupTouchAreas();
-        CreateVirtualButtons();
+        // Adjust button positions for different screen sizes
+        AdjustButtonPositions();
     }
     
     void Update()
     {
+        if (!enableTouchControls)
+            return;
+            
         HandleTouchInput();
-        HandleVirtualButtons();
-        
-        // Reset jump input after frame
-        jumpPressed = false;
-    }
-    
-    void SetupTouchAreas()
-    {
-        float screenWidth = Screen.width;
-        float screenHeight = Screen.height;
-        
-        // Left third of screen for movement
-        leftTouchArea = new Rect(0, 0, screenWidth / 3f, screenHeight);
-        
-        // Middle third for vertical movement (ladders)
-        rightTouchArea = new Rect(screenWidth / 3f, 0, screenWidth / 3f, screenHeight);
-        
-        // Right third for jumping
-        jumpTouchArea = new Rect(2 * screenWidth / 3f, 0, screenWidth / 3f, screenHeight);
+        HandleKeyboardInput();
     }
     
     void HandleTouchInput()
     {
-        if (!useTouchGestures) return;
+        // Reset button states
+        leftPressed = false;
+        rightPressed = false;
+        jumpPressed = false;
+        upPressed = false;
+        downPressed = false;
         
-        movementInput = Vector2.zero;
-        
+        #if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
+        // Handle multiple touches
         for (int i = 0; i < Input.touchCount; i++)
         {
             Touch touch = Input.GetTouch(i);
             Vector2 touchPos = touch.position;
             
-            if (leftTouchArea.Contains(touchPos))
+            // Convert screen position to GUI coordinates
+            touchPos.y = Screen.height - touchPos.y;
+            
+            if (touch.phase == TouchPhase.Began || touch.phase == TouchPhase.Stationary)
             {
-                // Handle horizontal movement
-                if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
-                {
-                    float deltaX = touch.deltaPosition.x * touchSensitivity;
-                    if (Mathf.Abs(deltaX) > 5f) // Minimum movement threshold
-                    {
-                        movementInput.x = Mathf.Sign(deltaX);
-                    }
-                }
-            }
-            else if (rightTouchArea.Contains(touchPos))
-            {
-                // Handle vertical movement (ladders)
-                if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
-                {
-                    float deltaY = touch.deltaPosition.y * touchSensitivity;
-                    if (Mathf.Abs(deltaY) > 5f) // Minimum movement threshold
-                    {
-                        movementInput.y = Mathf.Sign(deltaY);
-                    }
-                }
-            }
-            else if (jumpTouchArea.Contains(touchPos))
-            {
-                // Handle jumping
-                if (touch.phase == TouchPhase.Began)
-                {
-                    jumpPressed = true;
-                }
+                CheckButtonPress(touchPos);
             }
         }
         
-        // Also handle single tap for simple controls
-        if (Input.touchCount == 1)
+        // Handle mouse input for testing in editor
+        #if UNITY_EDITOR
+        if (Input.GetMouseButton(0))
         {
-            Touch touch = Input.GetTouch(0);
-            if (touch.phase == TouchPhase.Began)
-            {
-                Vector2 touchPos = touch.position;
-                float screenCenterX = Screen.width / 2f;
-                
-                if (touchPos.x < screenCenterX / 2f)
-                {
-                    movementInput.x = -1f; // Move left
-                }
-                else if (touchPos.x > screenCenterX * 1.5f)
-                {
-                    jumpPressed = true; // Jump
-                }
-                else if (touchPos.x > screenCenterX / 2f && touchPos.x < screenCenterX * 1.5f)
-                {
-                    movementInput.x = 1f; // Move right
-                }
-            }
+            Vector2 mousePos = Input.mousePosition;
+            mousePos.y = Screen.height - mousePos.y;
+            CheckButtonPress(mousePos);
         }
+        #endif
+        #endif
     }
     
-    void HandleVirtualButtons()
+    void CheckButtonPress(Vector2 position)
     {
-        if (!useVirtualButtons) return;
-        
-        // Reset movement
-        movementInput = Vector2.zero;
-        
-        // Check virtual button states
-        if (leftButton != null && IsButtonPressed(leftButton))
-        {
-            movementInput.x = -1f;
-        }
-        
-        if (rightButton != null && IsButtonPressed(rightButton))
-        {
-            movementInput.x = 1f;
-        }
-        
-        if (upButton != null && IsButtonPressed(upButton))
-        {
-            movementInput.y = 1f;
-        }
-        
-        if (downButton != null && IsButtonPressed(downButton))
-        {
-            movementInput.y = -1f;
-        }
-        
-        if (jumpButton != null && WasButtonPressed(jumpButton))
-        {
+        if (leftButtonRect.Contains(position))
+            leftPressed = true;
+        else if (rightButtonRect.Contains(position))
+            rightPressed = true;
+        else if (jumpButtonRect.Contains(position))
             jumpPressed = true;
-        }
+        else if (upButtonRect.Contains(position))
+            upPressed = true;
+        else if (downButtonRect.Contains(position))
+            downPressed = true;
     }
     
-    bool IsButtonPressed(Button button)
+    void HandleKeyboardInput()
     {
-        // This would need to be implemented with proper UI button handling
-        // For now, we'll use a simple approach
-        return false; // Placeholder
+        // Fallback keyboard controls
+        if (Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A))
+            leftPressed = true;
+        if (Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D))
+            rightPressed = true;
+        if (Input.GetKeyDown(KeyCode.Space) || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
+            jumpPressed = true;
+        if (Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W))
+            upPressed = true;
+        if (Input.GetKey(KeyCode.DownArrow) || Input.GetKey(KeyCode.S))
+            downPressed = true;
     }
     
-    bool WasButtonPressed(Button button)
+    void AdjustButtonPositions()
     {
-        // This would need to be implemented with proper UI button handling
-        // For now, we'll use a simple approach
-        return false; // Placeholder
+        // Adjust button positions based on screen size
+        float screenWidth = Screen.width;
+        float screenHeight = Screen.height;
+        
+        // Scale buttons for different screen sizes
+        float scale = Mathf.Min(screenWidth / 1920f, screenHeight / 1080f);
+        
+        leftButtonRect = ScaleRect(leftButtonRect, scale);
+        rightButtonRect = ScaleRect(rightButtonRect, scale);
+        jumpButtonRect = new Rect(screenWidth - 150 * scale, 50 * scale, 100 * scale, 100 * scale);
+        upButtonRect = ScaleRect(upButtonRect, scale);
+        downButtonRect = ScaleRect(downButtonRect, scale);
     }
     
-    void CreateVirtualButtons()
+    Rect ScaleRect(Rect original, float scale)
     {
-        if (!useVirtualButtons) return;
-        
-        // Create Canvas for UI
-        GameObject canvasObj = new GameObject("TouchControlsCanvas");
-        Canvas canvas = canvasObj.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 100;
-        
-        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        
-        canvasObj.AddComponent<GraphicRaycaster>();
-        
-        // Create movement buttons
-        CreateButton("LeftButton", canvas.transform, new Vector2(-700, -350), "←", () => movementInput.x = -1f);
-        CreateButton("RightButton", canvas.transform, new Vector2(-500, -350), "→", () => movementInput.x = 1f);
-        CreateButton("UpButton", canvas.transform, new Vector2(-600, -250), "↑", () => movementInput.y = 1f);
-        CreateButton("DownButton", canvas.transform, new Vector2(-600, -450), "↓", () => movementInput.y = -1f);
-        
-        // Create jump button
-        CreateButton("JumpButton", canvas.transform, new Vector2(600, -350), "JUMP", () => jumpPressed = true);
+        return new Rect(original.x * scale, original.y * scale, original.width * scale, original.height * scale);
     }
     
-    void CreateButton(string name, Transform parent, Vector2 position, string text, System.Action onPress)
+    void OnGUI()
     {
-        GameObject buttonObj = new GameObject(name);
-        buttonObj.transform.SetParent(parent);
+        if (!enableTouchControls)
+            return;
+            
+        // Draw touch buttons for mobile
+        #if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
+        DrawTouchButton(leftButtonRect, "←", leftPressed);
+        DrawTouchButton(rightButtonRect, "→", rightPressed);
+        DrawTouchButton(jumpButtonRect, "JUMP", jumpPressed);
+        DrawTouchButton(upButtonRect, "↑", upPressed);
+        DrawTouchButton(downButtonRect, "↓", downPressed);
+        #endif
+    }
+    
+    void DrawTouchButton(Rect rect, string label, bool isPressed)
+    {
+        Color originalColor = GUI.backgroundColor;
+        GUI.backgroundColor = isPressed ? Color.yellow : Color.white;
         
-        RectTransform rect = buttonObj.AddComponent<RectTransform>();
-        rect.anchoredPosition = position;
-        rect.sizeDelta = new Vector2(150, 100);
-        
-        Image image = buttonObj.AddComponent<Image>();
-        image.color = new Color(1f, 1f, 1f, 0.7f);
-        
-        Button button = buttonObj.AddComponent<Button>();
-        
-        // Add text
-        GameObject textObj = new GameObject("Text");
-        textObj.transform.SetParent(buttonObj.transform);
-        
-        RectTransform textRect = textObj.AddComponent<RectTransform>();
-        textRect.anchoredPosition = Vector2.zero;
-        textRect.sizeDelta = rect.sizeDelta;
-        
-        Text buttonText = textObj.AddComponent<Text>();
-        buttonText.text = text;
-        buttonText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        buttonText.fontSize = 24;
-        buttonText.color = Color.black;
-        buttonText.alignment = TextAnchor.MiddleCenter;
-        
-        // Store button references
-        switch (name)
+        if (GUI.Button(rect, label))
         {
-            case "LeftButton": leftButton = button; break;
-            case "RightButton": rightButton = button; break;
-            case "UpButton": upButton = button; break;
-            case "DownButton": downButton = button; break;
-            case "JumpButton": jumpButton = button; break;
+            // Button was pressed
         }
+        
+        GUI.backgroundColor = originalColor;
     }
     
-    // Public methods for other scripts to access input
-    public Vector2 GetMovementInput()
+    // Public methods for other scripts to check input
+    public bool GetLeftInput()
     {
-        return movementInput;
+        return leftPressed;
+    }
+    
+    public bool GetRightInput()
+    {
+        return rightPressed;
     }
     
     public bool GetJumpInput()
     {
-        bool result = jumpPressed;
-        return result;
+        return jumpPressed;
     }
     
-    public void SetMovementInput(Vector2 input)
+    public bool GetUpInput()
     {
-        movementInput = input;
+        return upPressed;
     }
     
-    public void SetJumpInput(bool pressed)
+    public bool GetDownInput()
     {
-        jumpPressed = pressed;
+        return downPressed;
+    }
+    
+    public Vector2 GetMovementInput()
+    {
+        Vector2 movement = Vector2.zero;
+        
+        if (leftPressed)
+            movement.x -= 1f;
+        if (rightPressed)
+            movement.x += 1f;
+        if (upPressed)
+            movement.y += 1f;
+        if (downPressed)
+            movement.y -= 1f;
+            
+        return movement;
+    }
+    
+    // Enable/disable touch controls
+    public void SetTouchControlsEnabled(bool enabled)
+    {
+        enableTouchControls = enabled;
     }
 }

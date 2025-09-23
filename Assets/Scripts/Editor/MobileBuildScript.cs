@@ -14,7 +14,7 @@ public class MobileBuildScript
         
         // Android specific settings
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
-        PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel21;
+        PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel22;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
         
         // Graphics settings for mobile
@@ -161,14 +161,13 @@ public class MobileBuildScript
         PlayerSettings.gpuSkinning = true;
         PlayerSettings.graphicsJobs = true;
         
-        // Audio optimization
-        AudioSettings.configuration = AudioConfiguration.GetConfiguration();
+        // Audio optimization for mobile
         var config = AudioSettings.GetConfiguration();
         config.dspBufferSize = 1024; // Higher buffer for mobile
         AudioSettings.Reset(config);
         
         // Physics optimization
-        Physics2D.velociterations = 6;
+        Physics2D.velocityIterations = 6;
         Physics2D.positionIterations = 2;
         
         Debug.Log("Mobile optimizations applied");

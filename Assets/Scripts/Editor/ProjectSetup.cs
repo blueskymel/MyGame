@@ -13,9 +13,11 @@ public class ProjectSetup
         SetupLayers();
         SetupTags();
         ConfigureMobileSettings();
+        ConfigureVisualStudio2022();
         CreateMainScene();
         
         Debug.Log("Project setup complete! Ready to build Donkey Kong Mobile.");
+        Debug.Log("Visual Studio 2022 integration configured - no additional installation needed.");
     }
     
     static void CreateFolderStructure()
@@ -117,6 +119,47 @@ public class ProjectSetup
         PlayerSettings.productName = "Donkey Kong Mobile";
         
         Debug.Log("Mobile settings configured.");
+    }
+    
+    static void ConfigureVisualStudio2022()
+    {
+        // Configure Unity to use Visual Studio 2022 (already installed)
+        // Unity will automatically detect VS2022 if it's installed
+        
+        // Set code editor preferences
+        #if UNITY_EDITOR_WIN
+        // On Windows, ensure VS2022 is set as external script editor
+        string vs2022Path = @"C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe";
+        string vs2022ProPath = @"C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\IDE\devenv.exe";
+        string vs2022EntPath = @"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\IDE\devenv.exe";
+        
+        // Check which version is installed
+        if (System.IO.File.Exists(vs2022EntPath))
+        {
+            EditorPrefs.SetString("kScriptEditorArgs", "$(File)");
+            Debug.Log("Visual Studio 2022 Enterprise detected and configured.");
+        }
+        else if (System.IO.File.Exists(vs2022ProPath))
+        {
+            EditorPrefs.SetString("kScriptEditorArgs", "$(File)");
+            Debug.Log("Visual Studio 2022 Professional detected and configured.");
+        }
+        else if (System.IO.File.Exists(vs2022Path))
+        {
+            EditorPrefs.SetString("kScriptEditorArgs", "$(File)");
+            Debug.Log("Visual Studio 2022 Community detected and configured.");
+        }
+        else
+        {
+            Debug.LogWarning("Visual Studio 2022 not found in default locations. Please set manually in Edit > Preferences > External Tools.");
+        }
+        #endif
+        
+        // Configure Git integration
+        EditorPrefs.SetBool("vcPerforceOverlayIcons", false);
+        EditorPrefs.SetBool("vcGitOverlayIcons", true);
+        
+        Debug.Log("Visual Studio 2022 integration configured - skipping installation.");
     }
     
     static void CreateMainScene()

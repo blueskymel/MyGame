@@ -138,7 +138,7 @@ public class Barrel : MonoBehaviour
         }
     }
     
-    void HandleHammerHit()
+    public void HandleHammerHit()
     {
         // Player hit barrel with hammer
         if (GameManager.Instance != null)
